@@ -50,13 +50,15 @@ class WindowController: NSWindowController, Loggable {
         return NSColor(red: c[0] / 255, green: c[1] / 255, blue: c[2] / 255, alpha: 1)
     }
 
-    // The frontmost normal-level window of another app under the overlay's
-    // centre, as an NSRect (bottom-left origin), or nil
+    // The frontmost normal-level window of another app that contains the
+    // whole overlay (within 2 points), as an NSRect (bottom-left origin), or
+    // nil. Requiring the whole frame skips sheets, alerts and palettes that
+    // happen to sit over the middle of the target window.
     private func windowBelow(_ frame: NSRect) -> NSRect? {
 
         guard let primary = NSScreen.screens.first else { return nil }
-        let cx = frame.midX
-        let cy = primary.frame.height - frame.midY
+        let want = CGRect(x: frame.minX, y: primary.frame.height - frame.maxY,
+                          width: frame.width, height: frame.height).insetBy(dx: 2, dy: 2)
         let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as? [[String: Any]] ?? []
         for w in list {
             guard let layer = w[kCGWindowLayer as String] as? Int, layer == 0,
@@ -64,7 +66,7 @@ class WindowController: NSWindowController, Loggable {
                   pid != ProcessInfo.processInfo.processIdentifier,
                   let dict = w[kCGWindowBounds as String] as? NSDictionary,
                   let cg = CGRect(dictionaryRepresentation: dict) else { continue }
-            if cg.contains(CGPoint(x: cx, y: cy)) {
+            if cg.contains(want) {
                 return NSRect(x: cg.minX, y: primary.frame.height - cg.maxY, width: cg.width, height: cg.height)
             }
         }
