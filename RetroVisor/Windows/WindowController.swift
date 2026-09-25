@@ -75,9 +75,11 @@ class WindowController: NSWindowController, Loggable {
 
     private func showPlate(under frame: NSRect) {
 
+        // Off unless asked for: the capture's corners are squared on the GPU
+        // now (squareCorners in Shaders.metal), which follows whatever the
+        // window shows; a fixed-colour filler showed as an arc on a dark desk
         let defaults = UserDefaults.standard
-        if defaults.object(forKey: WindowController.plateKey) != nil,
-           !defaults.bool(forKey: WindowController.plateKey) { hidePlate(); return }
+        if !defaults.bool(forKey: WindowController.plateKey) { hidePlate(); return }
         guard let below = windowBelow(frame) else { log("no window under the overlay; no corner fillers"); hidePlate(); return }
 
         let r = CGFloat(defaults.object(forKey: WindowController.plateRadiusKey) != nil

@@ -210,3 +210,62 @@ kernel void dotMask(texture2d<half, access::sample> input     [[ texture(0) ]],
     half4 color = input.sample(sam, uv);
     output.write(color, gid);
 }
+
+//
+// chicago95 fork: square the window server's rounded bottom corners in the
+// captured image. `cut` is the measured macOS 27 window corner: for each
+// row counted up from the bottom edge, how many capture pixels at that end
+// of the row fall outside the window (alpha < 50%). Pixels there, plus a
+// small antialiasing margin, take the nearest pixel inside the window along
+// the bottom edge (below the diagonal) or along the side edge (above it),
+// so lines that run along the edges continue straight into the corner.
+//
+
+constant int cornerCut[35] = { 35, 25, 21, 18, 16, 15, 13, 12, 11, 10, 9, 8, 7, 6, 6, 5, 4,
+                               4, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+
+struct CornerUniforms {
+    float scale;    // texture pixels per capture pixel (1 at 1:1)
+    int margin;     // extra pixels replaced past the cut, for the antialiased edge
+};
+
+// Pixels at the start of row k (from the bottom) that are outside, in texture pixels
+static int cutAt(int k, float scale, int margin) {
+    int i = int(float(k) / scale);
+    if (i < 0 || i >= 35) return 0;
+    return int(ceil(float(cornerCut[i]) * scale)) + margin;
+}
+
+kernel void squareCorners(texture2d<float, access::read>  src [[ texture(0) ]],
+                          texture2d<float, access::write> dst [[ texture(1) ]],
+                          constant CornerUniforms &u        [[ buffer(0) ]],
+                          uint2 gid                          [[ thread_position_in_grid ]])
+{
+    int w = int(dst.get_width()), h = int(dst.get_height());
+    if (int(gid.x) >= w || int(gid.y) >= h) return;
+
+    float4 color = src.read(gid);
+    int k = h - 1 - int(gid.y);                       // row from the bottom
+    bool right = int(gid.x) >= w / 2;
+    int x = right ? (w - 1 - int(gid.x)) : int(gid.x); // column from the nearer side
+
+    int span = int(ceil(35.0 * u.scale)) + u.margin;
+    if (k < span && x < span) {
+        int rowCut = cutAt(k, u.scale, u.margin);
+        if (x < rowCut && cutAt(k, u.scale, 0) > 0) {
+            int sx, sy;
+            if (k <= x) {
+                // closer to the bottom edge: first inside pixel along this row
+                sx = rowCut; sy = h - 1 - k;
+            } else {
+                // closer to the side edge: first inside pixel up this column
+                int kk = k;
+                while (kk < span + 2 && x < cutAt(kk, u.scale, u.margin) && cutAt(kk, u.scale, 0) > 0) kk++;
+                sx = x; sy = h - 1 - (kk + u.margin);
+            }
+            if (right) sx = w - 1 - sx;
+            color = src.read(uint2(clamp(sx, 0, w - 1), clamp(sy, 0, h - 1)));
+        }
+    }
+    dst.write(color, gid);
+}

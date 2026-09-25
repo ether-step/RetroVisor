@@ -120,6 +120,9 @@ class MetalView: MTKView, Loggable, MTKViewDelegate {
     // Textures
     var src: MTLTexture?    // Source texture from the screen capturer
     var dwn: MTLTexture?    // Cropped and downsampled input texture
+    var sqr: MTLTexture?    // dwn with the window's rounded corners squared (chicago95 fork)
+    var cornerKernel: Kernel?
+    struct CornerUniforms { var scale: Float; var margin: Int32 }
     var dst: MTLTexture?    // Destination texture rendered in the effect window
 
     // Proposed size of the destination texture (picked up in update textures)
@@ -301,6 +304,7 @@ class MetalView: MTKView, Loggable, MTKViewDelegate {
             if dwn?.width != dwnW || dwn?.height != dwnH {
                 
                 dwn = Shader.makeTexture("dwn", width: dwnW, height: dwnH, pixelFormat: dst.pixelFormat)
+                sqr = Shader.makeTexture("sqr", width: dwnW, height: dwnH, pixelFormat: dst.pixelFormat)
             }
         }
     }
@@ -358,12 +362,34 @@ class MetalView: MTKView, Loggable, MTKViewDelegate {
         
         resampler.type = ResampleFilterType(rawValue: uniforms.resample)!
         resampler.apply(commandBuffer: commandBuffer, in: src, out: dwn, rect: texRect)
- 
+
+        //
+        // Pass 1b (chicago95 fork): square the rounded window corners at the
+        // bottom of the captured area. Defaults: SquareCorners (bool, on).
+        //
+
+        var input: MTLTexture = dwn
+        let squareOn = UserDefaults.standard.object(forKey: "SquareCorners") == nil
+            || UserDefaults.standard.bool(forKey: "SquareCorners")
+        if squareOn, let sqr = sqr {
+            if cornerKernel == nil { cornerKernel = Kernel(name: "squareCorners") }
+            if let k = cornerKernel {
+                // capture pixels per point are the screen's backing scale; the
+                // texture has dwn.height pixels for the window's height in points
+                let points = Float(trackingWindow.liveFrame.height)
+                let scale = points > 0 ? Float(dwn.height) / (points * Float(NSScreen.scaleFactor)) : 1
+                var cu = CornerUniforms(scale: scale, margin: 2)
+                k.apply(commandBuffer: commandBuffer, source: dwn, target: sqr,
+                        options: &cu, length: MemoryLayout<CornerUniforms>.stride)
+                input = sqr
+            }
+        }
+
         //
         // Stage 3: Apply the effect shader
         //
 
-        ShaderLibrary.shared.currentShader.apply(commandBuffer: commandBuffer, in: dwn, out: dst)
+        ShaderLibrary.shared.currentShader.apply(commandBuffer: commandBuffer, in: input, out: dst)
 
         //
         // Stage 3: (Optional) in-texture blurring
