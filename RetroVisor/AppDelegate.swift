@@ -40,6 +40,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+
+        // Line-buffer stdout so log lines reach a redirected file as they happen
+        setvbuf(stdout, nil, _IOLBF, 0)
         
         Task {
 

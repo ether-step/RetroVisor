@@ -105,6 +105,7 @@ final class ShaderLibrary {
 
     private init() {
 
+        shaders.append(RetroArchPreset())
         shaders.append(Sankara())
         shaders.append(CRTEasy())
         shaders.append(VHS())

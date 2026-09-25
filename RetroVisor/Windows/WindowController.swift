@@ -59,6 +59,8 @@ class WindowController: NSWindowController, Loggable {
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.trackingDelegate = self
+        // Remember the effect window's frame between launches (chicago95 fork)
+        window.setFrameAutosaveName("EffectWindow")
         window.makeKeyAndOrderFront(nil)
         unfreeze()
 

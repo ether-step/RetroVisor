@@ -11,6 +11,7 @@
 		50079E712E43813C005BC5FD /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50079E702E438139005BC5FD /* Extensions.swift */; };
 		5011EDEB2E6317DE00B0938A /* Sankara.metal in Sources */ = {isa = PBXBuildFile; fileRef = 5011EDEA2E6317D500B0938A /* Sankara.metal */; };
 		5011EDED2E6317F000B0938A /* Sankara.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5011EDEC2E6317EC00B0938A /* Sankara.swift */; };
+		5AC0FFEE0000000000000A02 /* RetroArchPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC0FFEE0000000000000A01 /* RetroArchPreset.swift */; };
 		50292D902E4685E10084CFE3 /* MetalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50292D8F2E4685D80084CFE3 /* MetalView.swift */; };
 		50292D942E471A330084CFE3 /* PermissionWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50292D932E471A2C0084CFE3 /* PermissionWindowController.swift */; };
 		50292D962E471AAA0084CFE3 /* PermissionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50292D952E471AA40084CFE3 /* PermissionViewController.swift */; };
@@ -62,6 +63,8 @@
 		50079E702E438139005BC5FD /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		5011EDEA2E6317D500B0938A /* Sankara.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Sankara.metal; sourceTree = "<group>"; };
 		5011EDEC2E6317EC00B0938A /* Sankara.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sankara.swift; sourceTree = "<group>"; };
+		5AC0FFEE0000000000000A01 /* RetroArchPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetroArchPreset.swift; sourceTree = "<group>"; };
+		5AC0FFEE0000000000000A03 /* librashader-bridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "librashader-bridge.h"; sourceTree = "<group>"; };
 		50292D8F2E4685D80084CFE3 /* MetalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalView.swift; sourceTree = "<group>"; };
 		50292D932E471A2C0084CFE3 /* PermissionWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionWindowController.swift; sourceTree = "<group>"; };
 		50292D952E471AA40084CFE3 /* PermissionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionViewController.swift; sourceTree = "<group>"; };
@@ -180,6 +183,7 @@
 				5069364F2E4EFEFB0037984F /* CrtEasy.swift */,
 				CB62DCB02F84C17100B1AEDC /* VHS.swift */,
 				5011EDEC2E6317EC00B0938A /* Sankara.swift */,
+				5AC0FFEE0000000000000A01 /* RetroArchPreset.swift */,
 			);
 			path = Shaders;
 			sourceTree = "<group>";
@@ -207,6 +211,7 @@
 				503FCC1F2E48670B00EF49DA /* Preferences */,
 				5069364B2E4EFB1F0037984F /* Windows */,
 				50BA96442E3C80D6006BA8DF /* AppDelegate.swift */,
+				5AC0FFEE0000000000000A03 /* librashader-bridge.h */,
 				50079E6D2E4331F2005BC5FD /* Menu.swift */,
 				50292D8F2E4685D80084CFE3 /* MetalView.swift */,
 				50BA964C2E3C80D6006BA8DF /* Streamer.swift */,
@@ -348,6 +353,7 @@
 				503FCC292E48F2D200EF49DA /* ShaderPreferencesViewController.swift in Sources */,
 				507ADD3B2E6EE29000BB7E10 /* ShaderSetting.swift in Sources */,
 				5011EDED2E6317F000B0938A /* Sankara.swift in Sources */,
+				5AC0FFEE0000000000000A02 /* RetroArchPreset.swift in Sources */,
 				504F539A2E59BC6600C5291F /* FilterLibrary.swift in Sources */,
 				50079E712E43813C005BC5FD /* Extensions.swift in Sources */,
 				5069365C2E4F76280037984F /* Kernel.swift in Sources */,
@@ -516,7 +522,14 @@
 				CURRENT_PROJECT_VERSION = 250916.5;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 3NG65ZLYW7;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/vendor/librashader";
+				OTHER_LDFLAGS = (
+					"$(SRCROOT)/vendor/librashader/librashader.a",
+					"-lc++",
+					"-liconv",
+				);
+				SWIFT_OBJC_BRIDGING_HEADER = "RetroVisor/librashader-bridge.h";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
@@ -528,7 +541,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.5;
 				MARKETING_VERSION = 1.0b4;
 				PRODUCT_BUNDLE_IDENTIFIER = de.dirkwhoffmann.de.RetroVisor;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -550,7 +563,14 @@
 				CURRENT_PROJECT_VERSION = 250916.5;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 3NG65ZLYW7;
-				ENABLE_APP_SANDBOX = YES;
+				ENABLE_APP_SANDBOX = NO;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/vendor/librashader";
+				OTHER_LDFLAGS = (
+					"$(SRCROOT)/vendor/librashader/librashader.a",
+					"-lc++",
+					"-liconv",
+				);
+				SWIFT_OBJC_BRIDGING_HEADER = "RetroVisor/librashader-bridge.h";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_RESOURCE_ACCESS_CAMERA = YES;
 				ENABLE_USER_SELECTED_FILES = readwrite;
@@ -562,7 +582,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MACOSX_DEPLOYMENT_TARGET = 14.5;
 				MARKETING_VERSION = 1.0b4;
 				PRODUCT_BUNDLE_IDENTIFIER = de.dirkwhoffmann.de.RetroVisor;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -64,3 +64,6 @@ fastlane/test_output
 # CocoaPods
 .DS_Store
 
+vendor/librashader/*.a
+vendor/librashader/*.dylib
+vendor/test/harness
