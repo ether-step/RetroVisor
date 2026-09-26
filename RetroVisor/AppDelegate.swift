@@ -36,6 +36,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidBecomeActive(_ notification: Notification) {
 
+        // chicago95 fork: while following a window, becoming active (a
+        // launcher's `open -a`, a Cmd-Tab) must not unfreeze the overlay;
+        // unfreeze from the menu or the Dock icon instead
+        if windowController?.following == true { return }
         windowController?.unfreeze()
     }
 

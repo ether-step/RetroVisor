@@ -165,6 +165,92 @@ class WindowController: NSWindowController, Loggable {
 
         // Launch the streamer
         streamer.enqueue(.start)
+
+        // chicago95 fork: snap to and follow a named window
+        startFollowing()
+    }
+
+    //
+    // chicago95 fork: follow a window. The effect window takes the frame of
+    // the window titled FollowWindow (default "chicago95") owned by
+    // FollowOwner (default "UTM"), less FollowTopInset points at the top
+    // (default 40, the VM window's title bar), freezes itself the first time
+    // it finds it (AutoFreeze, default on), keeps to it while frozen, and
+    // hides while the window is gone (minimized, closed). Set FollowWindow to
+    // "" for the stock behaviour. Unfreeze from the menu to place it by hand;
+    // freezing again snaps it back.
+    //
+
+    private var followTimer: Timer?
+    private var autoFrozen = false
+    private var hiddenForFollow = false
+
+    static func registerFollowDefaults() {
+
+        UserDefaults.standard.register(defaults: ["FollowWindow": "chicago95",
+                                                  "FollowOwner": "UTM",
+                                                  "FollowTopInset": 40.0,
+                                                  "AutoFreeze": true])
+    }
+
+    var following: Bool { !(UserDefaults.standard.string(forKey: "FollowWindow") ?? "").isEmpty }
+
+    func startFollowing() {
+
+        WindowController.registerFollowDefaults()
+        followTimer?.invalidate()
+        followTimer = Timer.scheduledTimer(timeInterval: 0.5, target: self,
+                                           selector: #selector(followTick),
+                                           userInfo: nil, repeats: true)
+    }
+
+    private func followTarget() -> NSRect? {
+
+        let d = UserDefaults.standard
+        guard let title = d.string(forKey: "FollowWindow"), !title.isEmpty,
+              let primary = NSScreen.screens.first else { return nil }
+        let owner = d.string(forKey: "FollowOwner") ?? "UTM"
+        let inset = CGFloat(d.double(forKey: "FollowTopInset"))
+        let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
+                                              kCGNullWindowID) as? [[String: Any]] ?? []
+        for w in list {
+            guard (w[kCGWindowOwnerName as String] as? String) == owner,
+                  (w[kCGWindowName as String] as? String) == title,
+                  (w[kCGWindowLayer as String] as? Int) == 0,
+                  let dict = w[kCGWindowBounds as String] as? NSDictionary,
+                  let cg = CGRect(dictionaryRepresentation: dict),
+                  cg.height > inset + 10 else { continue }
+            return NSRect(x: cg.minX, y: primary.frame.height - cg.maxY,
+                          width: cg.width, height: cg.height - inset)
+        }
+        return nil
+    }
+
+    @objc private func followTick() {
+
+        guard following, let window = window else { return }
+
+        guard let target = followTarget() else {
+            // The window is gone: do not shade whatever is behind it
+            if !hiddenForFollow { window.alphaValue = 0; hiddenForFollow = true }
+            return
+        }
+        if hiddenForFollow { window.alphaValue = 1; hiddenForFollow = false }
+
+        let f = window.frame
+        let moved = abs(f.minX - target.minX) > 0.5 || abs(f.minY - target.minY) > 0.5 ||
+                    abs(f.width - target.width) > 0.5 || abs(f.height - target.height) > 0.5
+
+        if !isFrozen {
+            // Freeze once by itself; after a manual unfreeze leave it to the user
+            guard UserDefaults.standard.bool(forKey: "AutoFreeze"), !autoFrozen else { return }
+            window.setFrame(target, display: true)
+            freeze()
+            autoFrozen = true
+            log("following \(UserDefaults.standard.string(forKey: "FollowWindow") ?? ""): frozen at \(target)")
+            return
+        }
+        if moved { window.setFrame(target, display: true) }
     }
 
     func showPermissionAlert() {
